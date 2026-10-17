@@ -1,0 +1,24 @@
+
+name: iOS unsigned build check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generate iOS project
+        run: flutter create --platforms=ios --project-name haftepool_prime .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS without signing
+        run: flutter build ios --release --no-codesign
