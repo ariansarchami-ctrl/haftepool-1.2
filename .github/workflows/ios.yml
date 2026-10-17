@@ -22,3 +22,9 @@ jobs:
 
       - name: Build iOS without signing
         run: flutter build ios --simulator --debug
+      - name: Upload iOS simulator build
+        uses: actions/upload-artifact@v4
+        with:
+          name: haftepool-ios-simulator
+          path: build/ios/iphonesimulator/Runner.app
+          if-no-files-found: error
