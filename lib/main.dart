@@ -22,6 +22,7 @@ import 'prime_goal_scenarios.dart' hide PrimeChallengeEngine;
 import 'prime_challenges.dart';
 import 'prime_reporting_engine.dart';
 import 'prime_preferences.dart';
+import 'prime31_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -592,6 +593,32 @@ Widget dashboard(){
   final weekPct=spendable>0?m.expense/spendable*100:0.0;
   final overToday=allowance>0&&todaySpent>allowance;
   final overWeek=spendable>0&&m.expense>spendable;
+  
+final previousWeek = dateKey(
+  weekStart(m.financialToday).subtract(
+    const Duration(days: 7),
+  ),
+);
+final previousExpense = m.total(previousWeek, 'expense');
+final expenseDifference = m.expense - previousExpense;
+final hasPreviousWeekData = m.entriesFor(previousWeek).isNotEmpty;
+  
+final categoryExpenses = <String, int>{};
+
+for (final entry in m.entriesFor(m.currentWeek)) {
+  if (entry.kind == 'expense') {
+    categoryExpenses.update(
+      entry.category,
+      (amount) => amount + entry.amount,
+      ifAbsent: () => entry.amount,
+    );
+  }
+}
+
+final sortedCategories = categoryExpenses.entries.toList()
+  ..sort((a, b) => b.value.compareTo(a.value));
+
+
   String coach;
   if(m.currentBudget==0){coach='اول بودجه این هفته را ثبت کن.';}
   else if(overWeek){coach='هشدار: هزینه‌های این هفته از بودجه قابل خرج بیشتر شده است. پیش از خرید بعدی، بودجه و پس‌انداز را بررسی کن.';}
@@ -608,55 +635,147 @@ Widget dashboard(){
       const SizedBox(height:10),
       Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
     ])),
+    
+card(
+  'مقایسه با هفته قبل',
+  Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('هزینه این هفته: ${toman(m.expense)}'),
+      Text('هزینه هفته قبل: ${toman(previousExpense)}'),
+      const SizedBox(height: 12),
+      if (!hasPreviousWeekData)
+        const Text('برای هفته قبل هنوز تراکنشی ثبت نشده است.')
+      else
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: expenseDifference > 0
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                expenseDifference > 0
+                    ? Icons.trending_up
+                    : expenseDifference < 0
+                        ? Icons.trending_down
+                        : Icons.trending_flat,
+                color: expenseDifference > 0
+                    ? Colors.red
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  expenseDifference == 0
+                      ? 'هزینه‌ها با هفته قبل برابر است.'
+                      : expenseDifference > 0
+                          ? '${toman(expenseDifference)} بیشتر از هفته قبل'
+                          : '${toman(-expenseDifference)} کمتر از هفته قبل',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      const SizedBox(height: 8),
+      const Text(
+        'مقایسه مجموع هزینه‌های ثبت‌شده؛ هفته جاری ممکن است هنوز کامل نشده باشد.',
+        style: TextStyle(fontSize: 11, color: Colors.grey),
+      ),
+    ],
+  ),
+),
+
+card(
+  'هزینه‌ها به تفکیک دسته‌بندی',
+  Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (sortedCategories.isEmpty)
+        const Text('هنوز هزینه‌ای برای این هفته ثبت نشده است.')
+      else
+        ...sortedCategories.asMap().entries.map((item) {
+          final category = item.value;
+          final colors = [
+            const Color(0xFF087F75),
+            const Color(0xFF6366F1),
+            const Color(0xFFEA8B35),
+            const Color(0xFFE65B65),
+            const Color(0xFF0EA5E9),
+          ];
+          final color = colors[item.key % colors.length];
+          final percent = m.expense > 0
+              ? category.value / m.expense
+              : 0.0;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        category.key,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text('${(percent * 100).toStringAsFixed(1)}٪'),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  toman(category.value),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: percent.clamp(0.0, 1.0).toDouble(),
+                  ),
+                  duration: const Duration(milliseconds: 700),
+                  builder: (context, value, child) {
+                    return LinearProgressIndicator(
+                      value: value,
+                      minHeight: 10,
+                      borderRadius: BorderRadius.circular(10),
+                      color: color,
+                      backgroundColor: color.withValues(alpha: 0.12),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }),
+    ],
+  ),
+),
 
 Prime31BudgetAlert(
   budget: spendable,
   spent: m.expense,
 ),
-    
 card('درصد مصرف بودجه', Column(
   children: [
     const SizedBox(height: 12),
-    SizedBox(
-      width: 170,
-      height: 170,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 160,
-            height: 160,
-            child: CircularProgressIndicator(
-              value: spendable > 0
-                  ? (weekPct / 100).clamp(0.0, 1.0)
-                  : 0.0,
-              strokeWidth: 15,
-              strokeCap: StrokeCap.round,
-              backgroundColor: const Color(0xffe5eeeb),
-              color: overWeek
-                  ? const Color(0xffe65b65)
-                  : const Color(0xff087f75),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                spendable > 0
-                    ? '${weekPct.toStringAsFixed(1)}٪'
-                    : '—',
-                style: const TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xff123b43),
-                ),
-              ),
-              const Text('بودجه خرج‌شده'),
-            ],
-          ),
-        ],
-      ),
+    
+    Prime31BudgetRing(
+      budget: spendable,
+      spent: m.expense,
     ),
+
     const SizedBox(height: 18),
     Text('کل بودجه قابل خرج: ${toman(spendable)}'),
     Text('هزینه این هفته: ${toman(m.expense)}'),
@@ -681,6 +800,19 @@ card('درصد مصرف بودجه', Column(
       ),
   ],
 )),
+
+card(
+  'تحلیل تصویری هزینه‌ها',
+  Prime31WeeklyChart(
+    dailyExpenses: List.generate(
+      7,
+      (i) => m.spentOn(
+        weekStart(m.financialToday).add(Duration(days: i)),
+      ),
+    ),
+    todayIndex: idx,
+  ),
+),
 
 card('روزهای هفته', Column(
   crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,6 +886,22 @@ card('روزهای هفته', Column(
     ),
   ],
 )),
+
+
+card(
+  'قلک هوشمند PRIME 3.1',
+  Prime31SavingsCard(
+    title: 'پس‌انداز این هفته',
+    target: m.currentTarget,
+    saved: m.entriesFor(m.currentWeek)
+        .where((e) =>
+            e.kind == 'transferOut' &&
+            e.toAccount == 'savings')
+        .fold<int>(0, (sum, e) => sum + e.amount),
+    formatMoney: (value) => toman(value),
+  ),
+),
+
 
 card('پس‌انداز این هفته', Container(
   width: double.infinity,
