@@ -602,6 +602,22 @@ final previousWeek = dateKey(
 final previousExpense = m.total(previousWeek, 'expense');
 final expenseDifference = m.expense - previousExpense;
 final hasPreviousWeekData = m.entriesFor(previousWeek).isNotEmpty;
+  
+final categoryExpenses = <String, int>{};
+
+for (final entry in m.entriesFor(m.currentWeek)) {
+  if (entry.kind == 'expense') {
+    categoryExpenses.update(
+      entry.category,
+      (amount) => amount + entry.amount,
+      ifAbsent: () => entry.amount,
+    );
+  }
+}
+
+final sortedCategories = categoryExpenses.entries.toList()
+  ..sort((a, b) => b.value.compareTo(a.value));
+
 
   String coach;
   if(m.currentBudget==0){coach='اول بودجه این هفته را ثبت کن.';}
