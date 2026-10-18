@@ -280,7 +280,7 @@ class FinanceModel extends ChangeNotifier {
 }
 
 class HaftepoolApp extends StatefulWidget {const HaftepoolApp({super.key});@override State<HaftepoolApp> createState()=>_HaftepoolAppState();}
-class _HaftepoolAppState extends State<HaftepoolApp>{final model=FinanceModel();@override void initState(){super.initState();model.load();} @override Widget build(BuildContext context)=>MaterialApp(debugShowCheckedModeBanner:false,title:'هفته‌پول PRIME',locale:const Locale('fa'),theme:ThemeData(useMaterial3:true,colorSchemeSeed:const Color(0xff087f75),scaffoldBackgroundColor:const Color(0xfff6f8f7)),home:AnimatedBuilder(animation:model,builder:(context,_)=>model.loaded?Home(model):const Scaffold(body:Center(child:CircularProgressIndicator()))));}
+class _HaftepoolAppState extends State<HaftepoolApp>{final model=FinanceModel();@override void initState(){super.initState();model.load();} @override Widget build(BuildContext context)=>MaterialApp(debugShowCheckedModeBanner:false,title:'هفته‌پول PRIME',locale:const Locale('fa'),theme:ThemeData(useMaterial3:true,colorSchemeSeed:const Color(0xff087f75),scaffoldBackgroundColor:const Color(0xfff1f5f9)),home:AnimatedBuilder(animation:model,builder:(context,_)=>model.loaded?Home(model):const Scaffold(body:Center(child:CircularProgressIndicator()))));}
 class Home extends StatefulWidget{final FinanceModel m;const Home(this.m,{super.key});@override State<Home> createState()=>_HomeState();}
 class _HomeState extends State<Home>{
   int tab=0;
@@ -608,14 +608,195 @@ Widget dashboard(){
       const SizedBox(height:10),
       Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
     ])),
-    card('درصد مصرف بودجه',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Text('امروز: ${allowance>0?todayPct.toStringAsFixed(1):'—'}٪ از سهم روزانه'),
-      LinearProgressIndicator(value:allowance>0?(todayPct/100).clamp(0.0,1.0):0,color:overToday?Colors.red:const Color(0xff087f75)),
-      const SizedBox(height:12),
-      Text('هفته: ${spendable>0?weekPct.toStringAsFixed(1):'—'}٪ از بودجه قابل خرج'),
-      LinearProgressIndicator(value:spendable>0?(weekPct/100).clamp(0.0,1.0):0,color:overWeek?Colors.red:const Color(0xff087f75)),
-      if(allowance==0||spendable==0)const Padding(padding:EdgeInsets.only(top:8),child:Text('برای نمایش درصد، بودجه قابل خرج تعیین کن.')),
-    ])),
+
+card('درصد مصرف بودجه', Column(
+  children: [
+    const SizedBox(height: 12),
+    SizedBox(
+      width: 170,
+      height: 170,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 160,
+            height: 160,
+            child: CircularProgressIndicator(
+              value: spendable > 0
+                  ? (weekPct / 100).clamp(0.0, 1.0)
+                  : 0.0,
+              strokeWidth: 15,
+              strokeCap: StrokeCap.round,
+              backgroundColor: const Color(0xffe5eeeb),
+              color: overWeek
+                  ? const Color(0xffe65b65)
+                  : const Color(0xff087f75),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                spendable > 0
+                    ? '${weekPct.toStringAsFixed(1)}٪'
+                    : '—',
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xff123b43),
+                ),
+              ),
+              const Text('بودجه خرج‌شده'),
+            ],
+          ),
+        ],
+      ),
+    ),
+    const SizedBox(height: 18),
+    Text('کل بودجه قابل خرج: ${toman(spendable)}'),
+    Text('هزینه این هفته: ${toman(m.expense)}'),
+    Text('باقی‌مانده: ${toman(max(0, spendable - m.expense))}'),
+    const SizedBox(height: 16),
+    Text(
+      'مصرف امروز: ${allowance > 0 ? todayPct.toStringAsFixed(1) : '—'}٪',
+    ),
+    LinearProgressIndicator(
+      value: allowance > 0
+          ? (todayPct / 100).clamp(0.0, 1.0)
+          : 0.0,
+      minHeight: 7,
+      borderRadius: BorderRadius.circular(10),
+      color: overToday ? Colors.red : const Color(0xff087f75),
+      backgroundColor: const Color(0xffe5eeeb),
+    ),
+    if (spendable == 0)
+      const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: Text('برای نمایش درصد، بودجه قابل خرج تعیین کن.'),
+      ),
+  ],
+)),
+
+card('روزهای هفته', Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    const Text(
+      'هزینه‌های این هفته',
+      style: TextStyle(
+        fontSize: 14,
+        color: Color(0xff64748b),
+      ),
+    ),
+    const SizedBox(height: 14),
+    Row(
+      children: List.generate(7, (i) {
+        final date = weekStart(m.financialToday)
+            .add(Duration(days: i));
+        final spent = m.spentOn(date);
+        final isToday = i == idx;
+
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: isToday
+                  ? const Color(0xff087f75)
+                  : const Color(0xfff0f5f3),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  weekdays[i].substring(0, 1),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isToday ? Colors.white : const Color(0xff123b43),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Icon(
+                  spent > 0
+                      ? Icons.circle
+                      : Icons.circle_outlined,
+                  size: 12,
+                  color: isToday
+                      ? Colors.white
+                      : spent > 0
+                          ? const Color(0xff087f75)
+                          : const Color(0xffa3b5b0),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  nf.format(spent),
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: isToday ? Colors.white : const Color(0xff123b43),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    ),
+    const SizedBox(height: 10),
+    const Text(
+      'مبالغ به تومان هستند؛ روز جاری با رنگ سبز مشخص شده است.',
+      style: TextStyle(fontSize: 11, color: Color(0xff64748b)),
+    ),
+  ],
+)),
+
+card('پس‌انداز این هفته', Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(18),
+  decoration: BoxDecoration(
+    gradient: const LinearGradient(
+      colors: [
+        Color(0xff123b43),
+        Color(0xff087f75),
+      ],
+    ),
+    borderRadius: BorderRadius.circular(18),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Row(
+        children: [
+          Icon(Icons.savings_outlined, color: Colors.white),
+          SizedBox(width: 8),
+          Text(
+            'هدف پس‌انداز',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Text(
+        toman(m.currentTarget),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 27,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      const SizedBox(height: 8),
+      const Text(
+        'مبلغی که برای پس‌انداز این هفته برنامه‌ریزی کرده‌ای',
+        style: TextStyle(color: Colors.white70, fontSize: 12),
+      ),
+    ],
+  ),
+)),
+
     card('پیش‌بینی تا پایان هفته',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('خرج تخمینی: ${toman(m.projectedSpend)}'),Text('مانده تخمینی: ${toman(m.currentBudget+m.carryIn+m.income-m.projectedSpend-m.total(m.currentWeek,'transferOut'))}'),if(m.unusualExpense)const Text('هشدار: خرج امروز از الگوی گذشته بیشتر است',style:TextStyle(color:Colors.deepOrange))])),
     card('مربی مالی',Text(coach,style:TextStyle(color:overToday||overWeek?Colors.deepOrange:null))),
     card('تراکنش‌های هفته',Column(children:m.entriesFor(m.currentWeek).reversed.map((e)=>ListTile(
