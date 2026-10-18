@@ -5,7 +5,7 @@ class PrimeWeekSnapshot {
   final int expenses;
   final int saved;
   final int plannedSaving;
-  const PrimeWeekSnapshot({required this.income, required this.expenses,
+   PrimeWeekSnapshot({required this.income, required this.expenses,
     required this.saved, required this.plannedSaving}) {
     if (income < 0 || expenses < 0 || saved < 0 || plannedSaving < 0) {
       throw ArgumentError('Weekly values must be non-negative');
