@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'prime_data_safety.dart';
 import 'prime_analytics.dart';
@@ -214,8 +215,8 @@ class FinanceModel extends ChangeNotifier {
   int get income=>total(currentWeek,'income');
   int get expense=>total(currentWeek,'expense');
   int get available=>currentBudget+carryIn+income-expense-total(currentWeek,'transferOut');
-  int get savedBalance=>entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='savings').fold(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='savings').fold(0,(a,e)=>a+e.amount)+settlements.values.fold<int>(0,(a,x)=>a+((x['saving']??0) as num).toInt());
-  int goalBalance(Goal g)=>g.initial+entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='goal:${g.id}').fold(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='goal:${g.id}').fold(0,(a,e)=>a+e.amount);
+  int get savedBalance=>entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='savings').fold<int>(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='savings').fold<int>(0,(a,e)=>a+e.amount)+settlements.values.fold<int>(0,(a,x)=>a+((x['saving']??0) as num).toInt());
+  int goalBalance(Goal g)=>g.initial+entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='goal:${g.id}').fold<int>(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='goal:${g.id}').fold<int>(0,(a,e)=>a+e.amount);
   int dailyAllowance(int i){final alloc=max(0,currentBudget-currentTarget),sum=weights.reduce((a,b)=>a+b);return sum>0?(alloc*weights[i]/sum).floor():0;}
   int spentOn(DateTime d)=>entries.where((e)=>e.kind=='expense'&&e.date==dateKey(d)).fold(0,(a,e)=>a+e.amount);
   double get expectedSpend {final h=budgets.keys.where((k)=>k!=currentWeek&&k.compareTo(currentWeek)<0).toList()..sort();if(h.isEmpty)return 0;final last=h.reversed.take(8).toList();return last.map((k)=>total(k,'expense')).reduce((a,b)=>a+b)/last.length;}
