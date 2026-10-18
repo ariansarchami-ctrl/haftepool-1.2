@@ -30,4 +30,12 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href /haftepool-1.2/
+        run: flutter build web --release --base-href /
+
+      - name: Save PRIME 3.0 web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime3-web-test
+          path: build/web/
+          if-no-files-found: error
+          retention-days: 7
