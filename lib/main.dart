@@ -619,6 +619,64 @@ final hasPreviousWeekData = m.entriesFor(previousWeek).isNotEmpty;
       const SizedBox(height:10),
       Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
     ])),
+    
+card(
+  'مقایسه با هفته قبل',
+  Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('هزینه این هفته: ${toman(m.expense)}'),
+      Text('هزینه هفته قبل: ${toman(previousExpense)}'),
+      const SizedBox(height: 12),
+      if (!hasPreviousWeekData)
+        const Text('برای هفته قبل هنوز تراکنشی ثبت نشده است.')
+      else
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: expenseDifference > 0
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                expenseDifference > 0
+                    ? Icons.trending_up
+                    : expenseDifference < 0
+                        ? Icons.trending_down
+                        : Icons.trending_flat,
+                color: expenseDifference > 0
+                    ? Colors.red
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  expenseDifference == 0
+                      ? 'هزینه‌ها با هفته قبل برابر است.'
+                      : expenseDifference > 0
+                          ? '${toman(expenseDifference)} بیشتر از هفته قبل'
+                          : '${toman(-expenseDifference)} کمتر از هفته قبل',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      const SizedBox(height: 8),
+      const Text(
+        'مقایسه مجموع هزینه‌های ثبت‌شده؛ هفته جاری ممکن است هنوز کامل نشده باشد.',
+        style: TextStyle(fontSize: 11, color: Colors.grey),
+      ),
+    ],
+  ),
+),
+
 Prime31BudgetAlert(
   budget: spendable,
   spent: m.expense,
