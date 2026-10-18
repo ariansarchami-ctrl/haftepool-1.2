@@ -593,6 +593,16 @@ Widget dashboard(){
   final weekPct=spendable>0?m.expense/spendable*100:0.0;
   final overToday=allowance>0&&todaySpent>allowance;
   final overWeek=spendable>0&&m.expense>spendable;
+  
+final previousWeek = dateKey(
+  weekStart(m.financialToday).subtract(
+    const Duration(days: 7),
+  ),
+);
+final previousExpense = m.total(previousWeek, 'expense');
+final expenseDifference = m.expense - previousExpense;
+final hasPreviousWeekData = m.entriesFor(previousWeek).isNotEmpty;
+
   String coach;
   if(m.currentBudget==0){coach='اول بودجه این هفته را ثبت کن.';}
   else if(overWeek){coach='هشدار: هزینه‌های این هفته از بودجه قابل خرج بیشتر شده است. پیش از خرید بعدی، بودجه و پس‌انداز را بررسی کن.';}
