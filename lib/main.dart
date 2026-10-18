@@ -609,7 +609,10 @@ Widget dashboard(){
       const SizedBox(height:10),
       Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
     ])),
-
+Prime31BudgetAlert(
+  budget: spendable,
+  spent: m.expense,
+),
 card('درصد مصرف بودجه', Column(
   children: [
     const SizedBox(height: 12),
