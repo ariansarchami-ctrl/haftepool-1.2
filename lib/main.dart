@@ -901,7 +901,7 @@ card(
     formatMoney: (value) => toman(value),
   ),
 ),
-<
+
 
 card('پس‌انداز این هفته', Container(
   width: double.infinity,
