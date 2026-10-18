@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'prime_data_safety.dart';
 import 'prime_analytics.dart';
 import 'prime_savings_advisor.dart';
-import 'prime_planning_engine.dart';
+import 'prime_planning_engine.dart' hide PrimeWallet, PrimeWalletLedger;
 import 'prime_wallet_engine.dart';
 import 'prime_wallet_reconciliation.dart';
 import 'prime_wallet_mapping_audit.dart';
