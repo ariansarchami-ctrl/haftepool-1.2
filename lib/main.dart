@@ -210,17 +210,17 @@ class FinanceModel extends ChangeNotifier {
   int total(String week,String kind)=>entriesFor(week).where((e)=>e.kind==kind).fold(0,(a,e)=>a+e.amount);
   int get currentBudget=>budgets[currentWeek]??0;
   int get currentTarget=>targets[currentWeek]??0;
-  int get carryIn=>settlements.entries.where((x)=>dateKey(weekStart(parseDate(x.key).add(const Duration(days:7))))==currentWeek).fold(0,(a,x)=>a+(x.value['next']??0));
+  int get carryIn=>settlements.entries.where((x)=>dateKey(weekStart(parseDate(x.key).add(const Duration(days:7))))==currentWeek).fold<int>(0,(a,x)=>a+((x.value['next']??0) as num).toInt());
   int get income=>total(currentWeek,'income');
   int get expense=>total(currentWeek,'expense');
   int get available=>currentBudget+carryIn+income-expense-total(currentWeek,'transferOut');
-  int get savedBalance=>entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='savings').fold(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='savings').fold(0,(a,e)=>a+e.amount)+settlements.values.fold(0,(a,x)=>a+(x['saving']??0));
+  int get savedBalance=>entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='savings').fold(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='savings').fold(0,(a,e)=>a+e.amount)+settlements.values.fold<int>(0,(a,x)=>a+((x['saving']??0) as num).toInt());
   int goalBalance(Goal g)=>g.initial+entries.where((e)=>e.kind=='transferOut'&&e.toAccount=='goal:${g.id}').fold(0,(a,e)=>a+e.amount)-entries.where((e)=>e.kind=='transferIn'&&e.account=='goal:${g.id}').fold(0,(a,e)=>a+e.amount);
   int dailyAllowance(int i){final alloc=max(0,currentBudget-currentTarget),sum=weights.reduce((a,b)=>a+b);return sum>0?(alloc*weights[i]/sum).floor():0;}
   int spentOn(DateTime d)=>entries.where((e)=>e.kind=='expense'&&e.date==dateKey(d)).fold(0,(a,e)=>a+e.amount);
   double get expectedSpend {final h=budgets.keys.where((k)=>k!=currentWeek&&k.compareTo(currentWeek)<0).toList()..sort();if(h.isEmpty)return 0;final last=h.reversed.take(8).toList();return last.map((k)=>total(k,'expense')).reduce((a,b)=>a+b)/last.length;}
   int? get suggestedSavings {final h=budgets.keys.where((k)=>k.compareTo(currentWeek)<0).toList()..sort();if(h.isEmpty)return null;final recent=h.reversed.take(8).toList();final vals=recent.map((k)=>max(0,(budgets[k]??0)+total(k,'income')-total(k,'expense'))).toList();return (vals.reduce((a,b)=>a+b)/vals.length/50000).floor()*50000;}
-  int get projectedSpend {final idx=(financialToday.difference(weekStart(financialToday)).inDays).clamp(0,6);final elapsed=idx+1;final actual=expense;final pace=actual/elapsed*7;return max(actual,((pace*0.65)+(expectedSpend>0?expectedSpend:pace)*0.35).round());}
+  int get projectedSpend {final idx=(financialToday.difference(weekStart(financialToday)).inDays).clamp(0,6);final elapsed=idx+1;final actual=expense;final pace=actual/elapsed*7;return max<int>(actual, ((pace * 0.65) + (expectedSpend > 0 ? expectedSpend : pace) * 0.35).round());}
   bool get unusualExpense {final idx=(financialToday.difference(weekStart(financialToday)).inDays).clamp(0,6);final historical=<int>[];for(final k in budgets.keys){if(k==currentWeek)continue;final d=parseDate(k).add(Duration(days:idx));historical.add(spentOn(d));}if(historical.length<3)return false;final avg=historical.reduce((a,b)=>a+b)/historical.length;return spentOn(financialToday)>max(100000,avg*1.8);}
   void updateEntry(String id,int amount,String category,String note){
     if(amount<=0)throw StateError('مبلغ باید بیشتر از صفر باشد');
