@@ -770,46 +770,12 @@ Prime31BudgetAlert(
 card('درصد مصرف بودجه', Column(
   children: [
     const SizedBox(height: 12),
-    SizedBox(
-      width: 170,
-      height: 170,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 160,
-            height: 160,
-            child: CircularProgressIndicator(
-              value: spendable > 0
-                  ? (weekPct / 100).clamp(0.0, 1.0)
-                  : 0.0,
-              strokeWidth: 15,
-              strokeCap: StrokeCap.round,
-              backgroundColor: const Color(0xffe5eeeb),
-              color: overWeek
-                  ? const Color(0xffe65b65)
-                  : const Color(0xff087f75),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                spendable > 0
-                    ? '${weekPct.toStringAsFixed(1)}٪'
-                    : '—',
-                style: const TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xff123b43),
-                ),
-              ),
-              const Text('بودجه خرج‌شده'),
-            ],
-          ),
-        ],
-      ),
+    
+    Prime31BudgetRing(
+      budget: spendable,
+      spent: m.expense,
     ),
+
     const SizedBox(height: 18),
     Text('کل بودجه قابل خرج: ${toman(spendable)}'),
     Text('هزینه این هفته: ${toman(m.expense)}'),
