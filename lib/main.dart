@@ -678,6 +678,19 @@ card('درصد مصرف بودجه', Column(
   ],
 )),
 
+card(
+  'تحلیل تصویری هزینه‌ها',
+  Prime31WeeklyChart(
+    dailyExpenses: List.generate(
+      7,
+      (i) => m.spentOn(
+        weekStart(m.financialToday).add(Duration(days: i)),
+      ),
+    ),
+    todayIndex: idx,
+  ),
+),
+
 card('روزهای هفته', Column(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
