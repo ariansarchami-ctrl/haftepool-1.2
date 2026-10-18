@@ -17,7 +17,7 @@ import 'prime_wallet_provenance.dart';
 import 'prime_health_score.dart';
 import 'prime_purchase_forecast.dart';
 import 'prime_cashflow_risk.dart';
-import 'prime_goal_scenarios.dart';
+import 'prime_goal_scenarios.dart' hide PrimeChallengeEngine;
 import 'prime_challenges.dart';
 import 'prime_reporting_engine.dart';
 import 'prime_preferences.dart';
