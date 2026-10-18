@@ -767,6 +767,16 @@ card('روزهای هفته', Column(
   ],
 )),
 
+card(
+  'قلک هوشمند PRIME 3.1',
+  Prime31SavingsCard(
+    title: 'پس‌انداز واقعی',
+    target: m.currentTarget,
+    saved: m.savedBalance,
+    formatMoney: (value) => toman(value),
+  ),
+),
+
 card('پس‌انداز این هفته', Container(
   width: double.infinity,
   padding: const EdgeInsets.all(18),
