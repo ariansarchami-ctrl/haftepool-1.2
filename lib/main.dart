@@ -693,6 +693,76 @@ card(
   ),
 ),
 
+card(
+  'هزینه‌ها به تفکیک دسته‌بندی',
+  Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (sortedCategories.isEmpty)
+        const Text('هنوز هزینه‌ای برای این هفته ثبت نشده است.')
+      else
+        ...sortedCategories.asMap().entries.map((item) {
+          final category = item.value;
+          final colors = [
+            const Color(0xFF087F75),
+            const Color(0xFF6366F1),
+            const Color(0xFFEA8B35),
+            const Color(0xFFE65B65),
+            const Color(0xFF0EA5E9),
+          ];
+          final color = colors[item.key % colors.length];
+          final percent = m.expense > 0
+              ? category.value / m.expense
+              : 0.0;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        category.key,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Text('${(percent * 100).toStringAsFixed(1)}٪'),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  toman(category.value),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: percent.clamp(0.0, 1.0).toDouble(),
+                  ),
+                  duration: const Duration(milliseconds: 700),
+                  builder: (context, value, child) {
+                    return LinearProgressIndicator(
+                      value: value,
+                      minHeight: 10,
+                      borderRadius: BorderRadius.circular(10),
+                      color: color,
+                      backgroundColor: color.withValues(alpha: 0.12),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }),
+    ],
+  ),
+),
+
 Prime31BudgetAlert(
   budget: spendable,
   spent: m.expense,
