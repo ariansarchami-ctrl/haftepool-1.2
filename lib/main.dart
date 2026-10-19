@@ -512,7 +512,99 @@ Future<void> editEntryDialog(Entry e)async{
     ])));
   amount.dispose();note.dispose();
 }
-Future<void> setupDialog()async{final b=TextEditingController(text:'${m.currentBudget}'),s=TextEditingController(text:'${m.suggestedSavings??m.currentTarget}');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('تنظیم بودجه این هفته'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:b,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'بودجه هفته')),TextField(controller:s,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'هدف پس‌انداز'))]),actions:[FilledButton(onPressed:(){final budget=int.tryParse(b.text)??0,target=int.tryParse(s.text)??0;if(budget>=0&&target>=0&&target<=budget){m.configureWeek(budget,target);Navigator.pop(c);}},child:const Text('تأیید'))]));}
+
+Future<void> setupDialog() async {
+  final b = TextEditingController(text: '${m.currentBudget}');
+  final s = TextEditingController(
+    text: '${m.suggestedSavings ?? m.currentTarget}',
+  );
+
+  String readable(int value) {
+    if (value >= 1000000000) {
+      return '${(value / 1000000000).toStringAsFixed(2)} میلیارد تومان';
+    }
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(2)} میلیون تومان';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(0)} هزار تومان';
+    }
+    return '$value تومان';
+  }
+
+  await showDialog(
+    context: context,
+    builder: (c) => StatefulBuilder(
+      builder: (c, refresh) {
+        final budget = int.tryParse(b.text) ?? 0;
+        final target = int.tryParse(s.text) ?? 0;
+
+        return AlertDialog(
+          title: const Text('تنظیم بودجه این هفته'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: b,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => refresh(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'بودجه هفته (تومان)',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readable(budget),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: s,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => refresh(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'هدف پس‌انداز (تومان)',
+                    prefixIcon: Icon(Icons.savings_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readable(target),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                if (budget >= 0 &&
+                    target >= 0 &&
+                    target <= budget) {
+                  m.configureWeek(budget, target);
+                  Navigator.pop(c);
+                }
+              },
+              child: const Text('تأیید'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  b.dispose();
+  s.dispose();
+}
+
 Future<void> goalDialog()async{final name=TextEditingController(),price=TextEditingController(),initial=TextEditingController(text:'0'),weekly=TextEditingController(text:'0');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('هدف خرید جدید'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,decoration:const InputDecoration(labelText:'نام کالا')),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'قیمت')),TextField(controller:initial,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'موجودی اولیه')),TextField(controller:weekly,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'پس‌انداز هفتگی'))])),actions:[FilledButton(onPressed:(){m.addGoal(name.text,int.tryParse(price.text)??0,int.tryParse(initial.text)??0,int.tryParse(weekly.text)??0);Navigator.pop(c);},child:const Text('ساخت قلک'))]));}
 Future<void> transferDialog({String? goal})async{final amount=TextEditingController();String to=goal??'savings';await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('انتقال واقعی از بودجه'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ')),DropdownButtonFormField<String>(initialValue:to,items:[const DropdownMenuItem(value:'savings',child:Text('پس‌انداز عمومی')),...m.goals.map((g)=>DropdownMenuItem(value:'goal:${g.id}',child:Text(g.name)))],onChanged:(x)=>to=x??to)]),actions:[FilledButton(onPressed:(){try{m.transfer(int.tryParse(amount.text)??0,to);Navigator.pop(c);}catch(e){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}},child:const Text('انتقال'))]));}
 Future<void> settleDialog(String key)async{final rem=max(0,(m.budgets[key]??0)+m.total(key,'income')-m.total(key,'expense')-m.total(key,'transferOut'));final value=TextEditingController(text:'$rem');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('تقسیم مانده پایان هفته'),content:Column(mainAxisSize:MainAxisSize.min,children:[Text('مانده: ${toman(rem)}'),TextField(controller:value,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'سهم پس‌انداز؛ باقی به هفته بعد'))]),actions:[FilledButton(onPressed:(){try{m.settle(key,int.parse(value.text));Navigator.pop(c);}catch(e){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}},child:const Text('تأیید نهایی'))]));}
