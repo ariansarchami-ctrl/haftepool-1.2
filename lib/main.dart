@@ -1166,8 +1166,44 @@ final sortedCategories = categoryExpenses.entries.toList()
               : 0.0,
           minHeight: 12,
           borderRadius: BorderRadius.circular(12),
+          
           color: overWeek ? Colors.redAccent : const Color(0xFF087F75),
           backgroundColor: Colors.black12,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: overWeek
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                overWeek
+                    ? Icons.warning_amber_rounded
+                    : Icons.event_available_outlined,
+                color: overWeek
+                    ? Colors.redAccent
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  overWeek
+                      ? 'بیشتر از بودجه هفته: ${toman(m.expense - spendable)}'
+                      : 'مانده بودجه هفته: ${toman(spendable - m.expense)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     )),
