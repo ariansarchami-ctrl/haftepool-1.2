@@ -96,11 +96,17 @@ class Prime32Jalali {
 class Prime32CalendarView extends StatefulWidget {
   final List<Prime32CalendarEntry> entries;
   final ValueChanged<DateTime>? onDateSelected;
+  
+  final void Function(DateTime date, String kind)? onAddEntry;
+
 
   const Prime32CalendarView({
     super.key,
     this.entries = const [],
     this.onDateSelected,
+    
+    this.onAddEntry,
+
   });
 
   @override
