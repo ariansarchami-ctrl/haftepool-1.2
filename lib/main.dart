@@ -539,7 +539,9 @@ Future<void> setupDialog() async {
         
 final budget = int.tryParse(b.text.replaceAll(',', '')) ?? 0;
 
-        final target = int.tryParse(s.text) ?? 0;
+        
+final target = int.tryParse(s.text.replaceAll(',', '')) ?? 0;
+
 
         return AlertDialog(
           title: const Text('تنظیم بودجه این هفته'),
@@ -588,10 +590,32 @@ final budget = int.tryParse(b.text.replaceAll(',', '')) ?? 0;
                   ),
                 ),
                 const SizedBox(height: 16),
+                
                 TextField(
                   controller: s,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      final digits = newValue.text.replaceAll(
+                        RegExp(r'[^0-9]'), '',
+                      );
+                      if (digits.isEmpty) {
+                        return const TextEditingValue();
+                      }
+                      final number = int.tryParse(digits);
+                      if (number == null) return oldValue;
+                      final formatted =
+                          NumberFormat.decimalPattern('en_US').format(number);
+                      return TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    }),
+                  ],
                   onChanged: (_) => refresh(() {}),
+
                   decoration: const InputDecoration(
                     labelText: 'هدف پس‌انداز (تومان)',
                     prefixIcon: Icon(Icons.savings_outlined),
