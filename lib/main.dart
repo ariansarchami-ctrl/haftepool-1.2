@@ -1120,8 +1120,45 @@ final sortedCategories = categoryExpenses.entries.toList()
           color: overToday ? Colors.redAccent : const Color(0xFF087F75),
           backgroundColor: Colors.black12,
         ),
+        
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: overToday
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                overToday
+                    ? Icons.warning_amber_rounded
+                    : Icons.account_balance_wallet_outlined,
+                color: overToday
+                    ? Colors.redAccent
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  overToday
+                      ? 'بیشتر از سهم امروز: ${toman(todaySpent - allowance)}'
+                      : 'مانده سهم امروز: ${toman(allowance - todaySpent)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 18),
         Text('خرج هفته: ${toman(m.expense)} از ${toman(spendable)}'),
+
         const SizedBox(height: 8),
         LinearProgressIndicator(
           value: spendable > 0
