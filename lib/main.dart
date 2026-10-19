@@ -1590,7 +1590,46 @@ card('پس‌انداز این هفته', Container(
 )),
 
     card('پیش‌بینی تا پایان هفته',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('خرج تخمینی: ${toman(m.projectedSpend)}'),Text('مانده تخمینی: ${toman(m.currentBudget+m.carryIn+m.income-m.projectedSpend-m.total(m.currentWeek,'transferOut'))}'),if(m.unusualExpense)const Text('هشدار: خرج امروز از الگوی گذشته بیشتر است',style:TextStyle(color:Colors.deepOrange))])),
-    card('مربی مالی',Text(coach,style:TextStyle(color:overToday||overWeek?Colors.deepOrange:null))),
+    
+    card(
+      'مربی مالی',
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: overToday || overWeek
+              ? const Color(0xFFFFF3E8)
+              : const Color(0xFFEAF6F2),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              overToday || overWeek
+                  ? Icons.lightbulb_outline
+                  : Icons.tips_and_updates_outlined,
+              color: overToday || overWeek
+                  ? Colors.deepOrange
+                  : const Color(0xFF087F75),
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                coach,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+
     card('تراکنش‌های هفته',Column(children:m.entriesFor(m.currentWeek).reversed.map((e)=>ListTile(
       title:Text('${e.kind=='expense'?'خرج':e.kind=='income'?'درآمد':'انتقال'} • ${e.category}'),
       subtitle:Text('${e.date} ${e.note}'),
