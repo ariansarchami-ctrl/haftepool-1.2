@@ -1628,11 +1628,19 @@ card('پس‌انداز این هفته', Container(
                   m.projectedSpend -
                   m.total(m.currentWeek, 'transferOut'),
             ),
-            style: const TextStyle(
+            
+            style: TextStyle(
               fontSize: 23,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF087F75),
+              color: m.currentBudget +
+                          m.carryIn +
+                          m.income -
+                          m.projectedSpend -
+                          m.total(m.currentWeek, 'transferOut') < 0
+                  ? Colors.redAccent
+                  : const Color(0xFF087F75),
             ),
+
           ),
           if (m.unusualExpense) ...[
             const SizedBox(height: 12),
