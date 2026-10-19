@@ -1377,6 +1377,20 @@ Widget calendarPage(){
   final upcoming=PrimeCalendarPlanner.upcoming(schedules:m.schedules,from:from,through:until);
   final byId={for(final s in m.schedules)s.id:s};
   return ListView(padding:const EdgeInsets.all(14),children:[
+    
+    Prime32CalendarView(
+      entries: m.entries.map((entry) {
+        return Prime32CalendarEntry(
+          id: entry.id,
+          date: parseDate(entry.date),
+          kind: entry.kind,
+          amount: entry.amount,
+          category: entry.category,
+          note: entry.note,
+        );
+      }).toList(),
+    ),
+
     card('تقویم مالی ۹۰ روز آینده',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       const Text('سررسیدهای آینده، صرفاً پیش‌بینی هستند و هیچ مبلغی خودکار از موجودی کم نمی‌شود.'),
       const SizedBox(height:8),FilledButton.icon(onPressed:addScheduleDialog,icon:const Icon(Icons.add),label:const Text('افزودن پرداخت یا درآمد تکراری')),
