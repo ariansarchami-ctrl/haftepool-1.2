@@ -1587,9 +1587,11 @@ card('پس‌انداز این هفته', Container(
       ),
     ],
   ),
+)),
 
     card(
       'پیش‌بینی تا پایان هفته',
+
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
