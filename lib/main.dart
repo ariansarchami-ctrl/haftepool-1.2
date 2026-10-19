@@ -1415,6 +1415,9 @@ Widget calendarPage(){
           note: entry.note,
         );
       }).toList(),
+      
+      onAddEntry: (date, kind) => entryDialog(kind, selectedDate: date),
+  
     ),
 
     card('تقویم مالی ۹۰ روز آینده',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
