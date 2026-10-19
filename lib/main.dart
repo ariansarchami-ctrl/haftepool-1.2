@@ -1264,7 +1264,11 @@ card(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerRight,
                     child: Text(
-                      toman(previousExpense),
+                      
+                      hasPreviousWeekData
+                          ? toman(previousExpense)
+                          : 'بدون اطلاعات',
+
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
