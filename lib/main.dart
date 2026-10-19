@@ -23,6 +23,8 @@ import 'prime_challenges.dart';
 import 'prime_reporting_engine.dart';
 import 'prime_preferences.dart';
 import 'prime31_dashboard.dart';
+import 'prime32_calendar_data.dart';
+import 'prime32_calendar_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -239,7 +241,33 @@ class FinanceModel extends ChangeNotifier {
     if(entries[i].kind!='expense'&&entries[i].kind!='income')throw StateError('حذف این نوع تراکنش هنوز فعال نیست');
     entries.removeAt(i);save();
   }
-  void addEntry(String kind,int amount,{String category='سایر',String note='',String account='budget',String toAccount=''}){if(amount<=0)return;entries.add(Entry(id:DateTime.now().microsecondsSinceEpoch.toString(),kind:kind,amount:amount,date:dateKey(financialToday),category:category,note:note,account:account,toAccount:toAccount));save();}
+  void addEntry(
+    String kind,
+    int amount, {
+    String category = 'سایر',
+    String note = '',
+    String account = 'budget',
+    String toAccount = '',
+    DateTime? selectedDate,
+  }) {
+    if (amount <= 0) return;
+    final entryDate = selectedDate ?? financialToday;
+    if (entryDate.isAfter(financialToday)) {
+      throw StateError('ثبت تراکنش برای روزهای آینده مجاز نیست');
+    }
+    entries.add(Entry(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      kind: kind,
+      amount: amount,
+      date: dateKey(entryDate),
+      category: category,
+      note: note,
+      account: account,
+      toAccount: toAccount,
+    ));
+    save();
+  }
+
   void transfer(int amount,String to){if(amount<=0||amount>available)throw StateError('موجودی بودجه کافی نیست');addEntry('transferOut',amount,toAccount:to);}
   void settle(String week,int saving){if(settlements.containsKey(week))throw StateError('این هفته قبلاً تسویه شده');final rem=max(0,(budgets[week]??0)+total(week,'income')-total(week,'expense')-total(week,'transferOut'));if(saving<0||saving>rem)throw StateError('مبلغ تقسیم نامعتبر است');settlements[week]={'saving':saving,'next':rem-saving};save();}
   void configureWeek(int budget,int target){
@@ -460,17 +488,192 @@ Future<void> backupDialog() async {
   ));
   input.dispose();
 }
-Future<void> entryDialog(String kind)async{final amount=TextEditingController(),note=TextEditingController();String category='خوراک';await showDialog(context:context,builder:(c)=>AlertDialog(title:Text(kind=='expense'?'ثبت خرید':'ثبت درآمد'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ به تومان')),if(kind=='expense')DropdownButtonFormField<String>(initialValue:category,items:['خوراک','رفت‌وآمد','تفریح','خرید','قبض','سایر'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>category=x??category),TextField(controller:note,decoration:const InputDecoration(labelText:'توضیح'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('انصراف')),FilledButton(onPressed:(){final n=int.tryParse(amount.text)??0;if(n>0){m.addEntry(kind,n,category:category,note:note.text);Navigator.pop(c);}},child:const Text('ثبت'))]));}
+
+Future<void> entryDialog(
+  String kind, {
+  DateTime? selectedDate,
+}) async {
+  final amount = TextEditingController();
+  final note = TextEditingController();
+  String category = 'خوراک';
+
+  await showDialog(
+    context: context,
+    builder: (c) => StatefulBuilder(
+      builder: (c, refresh) {
+        final value =
+            int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
+
+        String readableAmount() {
+          if (value >= 1000000000) {
+            return '${(value / 1000000000).toStringAsFixed(2)} میلیارد تومان';
+          }
+          if (value >= 1000000) {
+            return '${(value / 1000000).toStringAsFixed(2)} میلیون تومان';
+          }
+          if (value >= 1000) {
+            return '${(value / 1000).toStringAsFixed(0)} هزار تومان';
+          }
+          return '$value تومان';
+        }
+
+        return AlertDialog(
+          title: Text(
+            kind == 'expense' ? 'ثبت هزینه' : 'ثبت درآمد',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: amount,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    TextInputFormatter.withFunction(
+                      (oldValue, newValue) {
+                        final digits = newValue.text.replaceAll(
+                          RegExp(r'[^0-9]'),
+                          '',
+                        );
+                        if (digits.isEmpty) {
+                          return const TextEditingValue();
+                        }
+                        final number = int.tryParse(digits);
+                        if (number == null) return oldValue;
+                        final formatted =
+                            NumberFormat.decimalPattern('en_US')
+                                .format(number);
+                        return TextEditingValue(
+                          text: formatted,
+                          selection: TextSelection.collapsed(
+                            offset: formatted.length,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  onChanged: (_) => refresh(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'مبلغ به تومان',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readableAmount(),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (kind == 'expense') ...[
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    initialValue: category,
+                    items: [
+                      'خوراک',
+                      'رفت‌وآمد',
+                      'تفریح',
+                      'خرید',
+                      'قبض',
+                      'سایر',
+                    ].map((x) {
+                      return DropdownMenuItem(
+                        value: x,
+                        child: Text(x),
+                      );
+                    }).toList(),
+                    onChanged: (x) =>
+                        refresh(() => category = x ?? category),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: note,
+                  decoration: const InputDecoration(
+                    labelText: 'توضیح',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final n =
+                    int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
+                if (n > 0) {
+                  m.addEntry(
+                    kind,
+                    n,
+                    category: category,
+                    note: note.text,
+                    selectedDate: selectedDate,
+                  );
+                  Navigator.pop(c);
+                }
+              },
+              child: const Text('ثبت'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  amount.dispose();
+  note.dispose();
+}
+
 Future<void> editEntryDialog(Entry e)async{
   if(e.kind!='expense'&&e.kind!='income')return;
-  final amount=TextEditingController(text:'${e.amount}'),note=TextEditingController(text:e.note);
+  
+  final amount = TextEditingController(
+    text: NumberFormat.decimalPattern('en_US').format(e.amount),
+  );
+  final note = TextEditingController(text: e.note);
+
   const cats=['خوراک','رفت‌وآمد','تفریح','خرید','قبض','سایر'];
   String category=cats.contains(e.category)?e.category:'سایر';
   await showDialog(context:context,builder:(c)=>StatefulBuilder(builder:(c,refresh)=>AlertDialog(
     title:Text(e.kind=='expense'?'ویرایش خرج':'ویرایش درآمد'),
     content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       Text('تاریخ: ${e.date}'),
-      TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ به تومان')),
+      
+      TextField(
+        controller: amount,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            final digits = newValue.text.replaceAll(
+              RegExp(r'[^0-9]'), '',
+            );
+            if (digits.isEmpty) {
+              return const TextEditingValue();
+            }
+            final number = int.tryParse(digits);
+            if (number == null) return oldValue;
+            final formatted =
+                NumberFormat.decimalPattern('en_US').format(number);
+            return TextEditingValue(
+              text: formatted,
+              selection: TextSelection.collapsed(
+                offset: formatted.length,
+              ),
+            );
+          }),
+        ],
+        onChanged: (_) => refresh(() {}),
+        decoration: const InputDecoration(
+          labelText: 'مبلغ به تومان',
+          prefixIcon: Icon(Icons.edit_outlined),
+        ),
+      ),
+
       if(e.kind=='expense')DropdownButtonFormField<String>(initialValue:category,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>refresh(()=>category=x??category)),
       TextField(controller:note,decoration:const InputDecoration(labelText:'توضیح')),
     ])),
@@ -484,7 +687,147 @@ Future<void> editEntryDialog(Entry e)async{
     ])));
   amount.dispose();note.dispose();
 }
-Future<void> setupDialog()async{final b=TextEditingController(text:'${m.currentBudget}'),s=TextEditingController(text:'${m.suggestedSavings??m.currentTarget}');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('تنظیم بودجه این هفته'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:b,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'بودجه هفته')),TextField(controller:s,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'هدف پس‌انداز'))]),actions:[FilledButton(onPressed:(){final budget=int.tryParse(b.text)??0,target=int.tryParse(s.text)??0;if(budget>=0&&target>=0&&target<=budget){m.configureWeek(budget,target);Navigator.pop(c);}},child:const Text('تأیید'))]));}
+
+Future<void> setupDialog() async {
+  final b = TextEditingController(text: '${m.currentBudget}');
+  final s = TextEditingController(
+    text: '${m.suggestedSavings ?? m.currentTarget}',
+  );
+
+  String readable(int value) {
+    if (value >= 1000000000) {
+      return '${(value / 1000000000).toStringAsFixed(2)} میلیارد تومان';
+    }
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(2)} میلیون تومان';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(0)} هزار تومان';
+    }
+    return '$value تومان';
+  }
+
+  await showDialog(
+    context: context,
+    builder: (c) => StatefulBuilder(
+      builder: (c, refresh) {
+        
+final budget = int.tryParse(b.text.replaceAll(',', '')) ?? 0;
+
+        
+final target = int.tryParse(s.text.replaceAll(',', '')) ?? 0;
+
+
+        return AlertDialog(
+          title: const Text('تنظیم بودجه این هفته'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                
+                TextField(
+                  controller: b,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      final digits = newValue.text.replaceAll(
+                        RegExp(r'[^0-9]'), '',
+                      );
+                      if (digits.isEmpty) {
+                        return const TextEditingValue();
+                      }
+                      final number = int.tryParse(digits);
+                      if (number == null) return oldValue;
+                      final formatted =
+                          NumberFormat.decimalPattern('en_US').format(number);
+                      return TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: (_) => refresh(() {}),
+
+                  decoration: const InputDecoration(
+                    labelText: 'بودجه هفته (تومان)',
+                    prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readable(budget),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                TextField(
+                  controller: s,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      final digits = newValue.text.replaceAll(
+                        RegExp(r'[^0-9]'), '',
+                      );
+                      if (digits.isEmpty) {
+                        return const TextEditingValue();
+                      }
+                      final number = int.tryParse(digits);
+                      if (number == null) return oldValue;
+                      final formatted =
+                          NumberFormat.decimalPattern('en_US').format(number);
+                      return TextEditingValue(
+                        text: formatted,
+                        selection: TextSelection.collapsed(
+                          offset: formatted.length,
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: (_) => refresh(() {}),
+
+                  decoration: const InputDecoration(
+                    labelText: 'هدف پس‌انداز (تومان)',
+                    prefixIcon: Icon(Icons.savings_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readable(target),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                if (budget >= 0 &&
+                    target >= 0 &&
+                    target <= budget) {
+                  m.configureWeek(budget, target);
+                  Navigator.pop(c);
+                }
+              },
+              child: const Text('تأیید'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  b.dispose();
+  s.dispose();
+}
+
 Future<void> goalDialog()async{final name=TextEditingController(),price=TextEditingController(),initial=TextEditingController(text:'0'),weekly=TextEditingController(text:'0');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('هدف خرید جدید'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,decoration:const InputDecoration(labelText:'نام کالا')),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'قیمت')),TextField(controller:initial,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'موجودی اولیه')),TextField(controller:weekly,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'پس‌انداز هفتگی'))])),actions:[FilledButton(onPressed:(){m.addGoal(name.text,int.tryParse(price.text)??0,int.tryParse(initial.text)??0,int.tryParse(weekly.text)??0);Navigator.pop(c);},child:const Text('ساخت قلک'))]));}
 Future<void> transferDialog({String? goal})async{final amount=TextEditingController();String to=goal??'savings';await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('انتقال واقعی از بودجه'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ')),DropdownButtonFormField<String>(initialValue:to,items:[const DropdownMenuItem(value:'savings',child:Text('پس‌انداز عمومی')),...m.goals.map((g)=>DropdownMenuItem(value:'goal:${g.id}',child:Text(g.name)))],onChanged:(x)=>to=x??to)]),actions:[FilledButton(onPressed:(){try{m.transfer(int.tryParse(amount.text)??0,to);Navigator.pop(c);}catch(e){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}},child:const Text('انتقال'))]));}
 Future<void> settleDialog(String key)async{final rem=max(0,(m.budgets[key]??0)+m.total(key,'income')-m.total(key,'expense')-m.total(key,'transferOut'));final value=TextEditingController(text:'$rem');await showDialog(context:context,builder:(c)=>AlertDialog(title:const Text('تقسیم مانده پایان هفته'),content:Column(mainAxisSize:MainAxisSize.min,children:[Text('مانده: ${toman(rem)}'),TextField(controller:value,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'سهم پس‌انداز؛ باقی به هفته بعد'))]),actions:[FilledButton(onPressed:(){try{m.settle(key,int.parse(value.text));Navigator.pop(c);}catch(e){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}},child:const Text('تأیید نهایی'))]));}
@@ -627,22 +970,318 @@ final sortedCategories = categoryExpenses.entries.toList()
   else{coach='خرج امروز در محدوده سهم روزانه است. برای هدف خرید، مبلغی را که واقعاً کنار می‌گذاری به قلک منتقل کن.';}
   return ListView(padding:const EdgeInsets.all(14),children:[
     if(past.isNotEmpty)card('تسویه هفته گذشته',Column(children:[Text('هفته ${past.last} هنوز تسویه نشده'),FilledButton(onPressed:()=>settleDialog(past.last),child:const Text('تقسیم دستی مانده'))])),
-    card('موجودی قابل خرج',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Text(toman(m.available),style:const TextStyle(fontSize:30,fontWeight:FontWeight.w800,color:Color(0xff087f75))),
-      Text('سهم ${weekdays[idx]}: ${toman(allowance)}'),
-      Text('خرج امروز: ${toman(todaySpent)}'),
-      Text('هدف پس‌انداز: ${toman(m.currentTarget)}'),
-      const SizedBox(height:10),
-      Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
-    ])),
+
+    Card(
+      margin: const EdgeInsets.symmetric(vertical: 7),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF087F75)),
+                SizedBox(width: 8),
+                Text('موجودی قابل خرج',
+                    style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              toman(m.available),
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF087F75),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF6F2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.today,
+                            color: Color(0xFF087F75)),
+                        const SizedBox(height: 6),
+                        Text('سهم ${weekdays[idx]}'),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            toman(allowance),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.receipt_long_outlined),
+                        const SizedBox(height: 6),
+                        const Text('خرج امروز'),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            toman(todaySpent),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.savings_outlined,
+                    color: Color(0xFF087F75)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'هدف پس‌انداز: ${toman(m.currentTarget)}',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => entryDialog('expense'),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('ثبت هزینه'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => entryDialog('income'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('ثبت درآمد'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: setupDialog,
+              icon: const Icon(Icons.tune),
+              label: const Text('تنظیم بودجه هفته'),
+            ),
+          ],
+        ),
+      ),
+    ),
+
+    
+    card('پیشرفت بودجه', Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('خرج امروز: ${toman(todaySpent)} از ${toman(allowance)}'),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: allowance > 0
+              ? (todaySpent / allowance).clamp(0.0, 1.0)
+              : 0.0,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(12),
+          color: overToday ? Colors.redAccent : const Color(0xFF087F75),
+          backgroundColor: Colors.black12,
+        ),
+        
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: overToday
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                overToday
+                    ? Icons.warning_amber_rounded
+                    : Icons.account_balance_wallet_outlined,
+                color: overToday
+                    ? Colors.redAccent
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  overToday
+                      ? 'بیشتر از سهم امروز: ${toman(todaySpent - allowance)}'
+                      : 'مانده سهم امروز: ${toman(allowance - todaySpent)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Text('خرج هفته: ${toman(m.expense)} از ${toman(spendable)}'),
+
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: spendable > 0
+              ? (m.expense / spendable).clamp(0.0, 1.0)
+              : 0.0,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(12),
+          
+          color: overWeek ? Colors.redAccent : const Color(0xFF087F75),
+          backgroundColor: Colors.black12,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: overWeek
+                ? const Color(0xFFFFEBED)
+                : const Color(0xFFEAF6F2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                overWeek
+                    ? Icons.warning_amber_rounded
+                    : Icons.event_available_outlined,
+                color: overWeek
+                    ? Colors.redAccent
+                    : const Color(0xFF087F75),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  overWeek
+                      ? 'بیشتر از بودجه هفته: ${toman(m.expense - spendable)}'
+                      : 'مانده بودجه هفته: ${toman(spendable - m.expense)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    )),
+
     
 card(
   'مقایسه با هفته قبل',
   Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('هزینه این هفته: ${toman(m.expense)}'),
-      Text('هزینه هفته قبل: ${toman(previousExpense)}'),
+      
+      Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF6F2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.calendar_today_outlined,
+                      color: Color(0xFF087F75)),
+                  const SizedBox(height: 8),
+                  const Text('هزینه این هفته'),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      toman(m.expense),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.history_outlined),
+                  const SizedBox(height: 8),
+                  const Text('هزینه هفته قبل'),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      
+                      hasPreviousWeekData
+                          ? toman(previousExpense)
+                          : 'بدون اطلاعات',
+
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+
       const SizedBox(height: 12),
       if (!hasPreviousWeekData)
         const Text('برای هفته قبل هنوز تراکنشی ثبت نشده است.')
@@ -950,8 +1589,121 @@ card('پس‌انداز این هفته', Container(
   ),
 )),
 
-    card('پیش‌بینی تا پایان هفته',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('خرج تخمینی: ${toman(m.projectedSpend)}'),Text('مانده تخمینی: ${toman(m.currentBudget+m.carryIn+m.income-m.projectedSpend-m.total(m.currentWeek,'transferOut'))}'),if(m.unusualExpense)const Text('هشدار: خرج امروز از الگوی گذشته بیشتر است',style:TextStyle(color:Colors.deepOrange))])),
-    card('مربی مالی',Text(coach,style:TextStyle(color:overToday||overWeek?Colors.deepOrange:null))),
+    card(
+      'پیش‌بینی تا پایان هفته',
+
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_graph_outlined,
+                  color: Color(0xFF087F75)),
+              SizedBox(width: 8),
+              Text('برآورد بر اساس روند خرج‌های فعلی'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'خرج تخمینی تا پایان هفته',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          Text(
+            toman(m.projectedSpend),
+            style: const TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'مانده تخمینی پایان هفته',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          Text(
+            toman(
+              m.currentBudget +
+                  m.carryIn +
+                  m.income -
+                  m.projectedSpend -
+                  m.total(m.currentWeek, 'transferOut'),
+            ),
+            
+            style: TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+              color: m.currentBudget +
+                          m.carryIn +
+                          m.income -
+                          m.projectedSpend -
+                          m.total(m.currentWeek, 'transferOut') < 0
+                  ? Colors.redAccent
+                  : const Color(0xFF087F75),
+            ),
+
+          ),
+          if (m.unusualExpense) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'هشدار: خرج امروز از الگوی گذشته بیشتر است',
+              style: TextStyle(color: Colors.deepOrange),
+            ),
+          ],
+        ],
+      ),
+    ),
+
+    
+    card(
+      'مربی مالی',
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+ 
+        decoration: BoxDecoration(
+          color: overToday || overWeek ||
+                  (m.currentBudget > 0 &&
+                      m.projectedSpend >
+                          m.currentBudget + m.income)
+              ? const Color(0xFFFFF3E8)
+              : const Color(0xFFEAF6F2),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              overToday || overWeek ||
+                      (m.currentBudget > 0 &&
+                          m.projectedSpend >
+                              m.currentBudget + m.income)
+                  ? Icons.lightbulb_outline
+                  : Icons.tips_and_updates_outlined,
+              color: overToday || overWeek ||
+                      (m.currentBudget > 0 &&
+                          m.projectedSpend >
+                              m.currentBudget + m.income)
+                  ? Colors.deepOrange
+                  : const Color(0xFF087F75),
+              size: 26,
+            ),
+
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                coach,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+
     card('تراکنش‌های هفته',Column(children:m.entriesFor(m.currentWeek).reversed.map((e)=>ListTile(
       title:Text('${e.kind=='expense'?'خرج':e.kind=='income'?'درآمد':'انتقال'} • ${e.category}'),
       subtitle:Text('${e.date} ${e.note}'),
@@ -1375,6 +2127,23 @@ Widget calendarPage(){
   final upcoming=PrimeCalendarPlanner.upcoming(schedules:m.schedules,from:from,through:until);
   final byId={for(final s in m.schedules)s.id:s};
   return ListView(padding:const EdgeInsets.all(14),children:[
+    
+    Prime32CalendarView(
+      entries: m.entries.map((entry) {
+        return Prime32CalendarEntry(
+          id: entry.id,
+          date: parseDate(entry.date),
+          kind: entry.kind,
+          amount: entry.amount,
+          category: entry.category,
+          note: entry.note,
+        );
+      }).toList(),
+      
+      onAddEntry: (date, kind) => entryDialog(kind, selectedDate: date),
+  
+    ),
+
     card('تقویم مالی ۹۰ روز آینده',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       const Text('سررسیدهای آینده، صرفاً پیش‌بینی هستند و هیچ مبلغی خودکار از موجودی کم نمی‌شود.'),
       const SizedBox(height:8),FilledButton.icon(onPressed:addScheduleDialog,icon:const Icon(Icons.add),label:const Text('افزودن پرداخت یا درآمد تکراری')),
