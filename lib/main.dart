@@ -1214,8 +1214,70 @@ card(
   Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('هزینه این هفته: ${toman(m.expense)}'),
-      Text('هزینه هفته قبل: ${toman(previousExpense)}'),
+      
+      Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF6F2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.calendar_today_outlined,
+                      color: Color(0xFF087F75)),
+                  const SizedBox(height: 8),
+                  const Text('هزینه این هفته'),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      toman(m.expense),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.history_outlined),
+                  const SizedBox(height: 8),
+                  const Text('هزینه هفته قبل'),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      toman(previousExpense),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+
       const SizedBox(height: 12),
       if (!hasPreviousWeekData)
         const Text('برای هفته قبل هنوز تراکنشی ثبت نشده است.')
