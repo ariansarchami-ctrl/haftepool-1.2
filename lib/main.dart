@@ -655,14 +655,141 @@ final sortedCategories = categoryExpenses.entries.toList()
   else{coach='خرج امروز در محدوده سهم روزانه است. برای هدف خرید، مبلغی را که واقعاً کنار می‌گذاری به قلک منتقل کن.';}
   return ListView(padding:const EdgeInsets.all(14),children:[
     if(past.isNotEmpty)card('تسویه هفته گذشته',Column(children:[Text('هفته ${past.last} هنوز تسویه نشده'),FilledButton(onPressed:()=>settleDialog(past.last),child:const Text('تقسیم دستی مانده'))])),
-    card('موجودی قابل خرج',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      Text(toman(m.available),style:const TextStyle(fontSize:30,fontWeight:FontWeight.w800,color:Color(0xff087f75))),
-      Text('سهم ${weekdays[idx]}: ${toman(allowance)}'),
-      Text('خرج امروز: ${toman(todaySpent)}'),
-      Text('هدف پس‌انداز: ${toman(m.currentTarget)}'),
-      const SizedBox(height:10),
-      Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
-    ])),
+
+    Card(
+      margin: const EdgeInsets.symmetric(vertical: 7),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF087F75)),
+                SizedBox(width: 8),
+                Text('موجودی قابل خرج',
+                    style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              toman(m.available),
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF087F75),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF6F2),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.today,
+                            color: Color(0xFF087F75)),
+                        const SizedBox(height: 6),
+                        Text('سهم ${weekdays[idx]}'),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            toman(allowance),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.receipt_long_outlined),
+                        const SizedBox(height: 6),
+                        const Text('خرج امروز'),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            toman(todaySpent),
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.savings_outlined,
+                    color: Color(0xFF087F75)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'هدف پس‌انداز: ${toman(m.currentTarget)}',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => entryDialog('expense'),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('ثبت هزینه'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => entryDialog('income'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('ثبت درآمد'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: setupDialog,
+              icon: const Icon(Icons.tune),
+              label: const Text('تنظیم بودجه هفته'),
+            ),
+          ],
+        ),
+      ),
+    ),
+
     
     card('پیشرفت بودجه', Column(
       crossAxisAlignment: CrossAxisAlignment.start,
