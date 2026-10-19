@@ -631,7 +631,12 @@ Future<void> entryDialog(
 
 Future<void> editEntryDialog(Entry e)async{
   if(e.kind!='expense'&&e.kind!='income')return;
-  final amount=TextEditingController(text:'${e.amount}'),note=TextEditingController(text:e.note);
+  
+  final amount = TextEditingController(
+    text: NumberFormat.decimalPattern('en_US').format(e.amount),
+  );
+  final note = TextEditingController(text: e.note);
+
   const cats=['خوراک','رفت‌وآمد','تفریح','خرید','قبض','سایر'];
   String category=cats.contains(e.category)?e.category:'سایر';
   await showDialog(context:context,builder:(c)=>StatefulBuilder(builder:(c,refresh)=>AlertDialog(
