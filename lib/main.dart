@@ -1607,13 +1607,21 @@ card('پس‌انداز این هفته', Container(
           children: [
             Icon(
               
+
 overToday || overWeek ||
+    (m.currentBudget > 0 &&
+        m.projectedSpend > m.currentBudget + m.income)
+
     (m.currentBudget > 0 &&
         m.projectedSpend > m.currentBudget + m.income)
 
                   ? Icons.lightbulb_outline
                   : Icons.tips_and_updates_outlined,
-              color: overToday || overWeek
+              color: 
+overToday || overWeek ||
+    (m.currentBudget > 0 &&
+        m.projectedSpend > m.currentBudget + m.income)
+
                   ? Colors.deepOrange
                   : const Color(0xFF087F75),
               size: 26,
