@@ -488,7 +488,147 @@ Future<void> backupDialog() async {
   ));
   input.dispose();
 }
-Future<void> entryDialog(String kind, {DateTime? selectedDate})async{final amount=TextEditingController(),note=TextEditingController();String category='خوراک';await showDialog(context:context,builder:(c)=>AlertDialog(title:Text(kind=='expense'?'ثبت خرید':'ثبت درآمد'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ به تومان')),if(kind=='expense')DropdownButtonFormField<String>(initialValue:category,items:['خوراک','رفت‌وآمد','تفریح','خرید','قبض','سایر'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>category=x??category),TextField(controller:note,decoration:const InputDecoration(labelText:'توضیح'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('انصراف')),FilledButton(onPressed:(){final n=int.tryParse(amount.text)??0;if(n>0){m.addEntry(kind,n,category:category,note:note.text,selectedDate:selectedDate);Navigator.pop(c);}},child:const Text('ثبت'))]));}
+
+Future<void> entryDialog(
+  String kind, {
+  DateTime? selectedDate,
+}) async {
+  final amount = TextEditingController();
+  final note = TextEditingController();
+  String category = 'خوراک';
+
+  await showDialog(
+    context: context,
+    builder: (c) => StatefulBuilder(
+      builder: (c, refresh) {
+        final value =
+            int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
+
+        String readableAmount() {
+          if (value >= 1000000000) {
+            return '${(value / 1000000000).toStringAsFixed(2)} میلیارد تومان';
+          }
+          if (value >= 1000000) {
+            return '${(value / 1000000).toStringAsFixed(2)} میلیون تومان';
+          }
+          if (value >= 1000) {
+            return '${(value / 1000).toStringAsFixed(0)} هزار تومان';
+          }
+          return '$value تومان';
+        }
+
+        return AlertDialog(
+          title: Text(
+            kind == 'expense' ? 'ثبت هزینه' : 'ثبت درآمد',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: amount,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    TextInputFormatter.withFunction(
+                      (oldValue, newValue) {
+                        final digits = newValue.text.replaceAll(
+                          RegExp(r'[^0-9]'),
+                          '',
+                        );
+                        if (digits.isEmpty) {
+                          return const TextEditingValue();
+                        }
+                        final number = int.tryParse(digits);
+                        if (number == null) return oldValue;
+                        final formatted =
+                            NumberFormat.decimalPattern('en_US')
+                                .format(number);
+                        return TextEditingValue(
+                          text: formatted,
+                          selection: TextSelection.collapsed(
+                            offset: formatted.length,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                  onChanged: (_) => refresh(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'مبلغ به تومان',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  readableAmount(),
+                  style: const TextStyle(
+                    color: Color(0xFF087F75),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (kind == 'expense') ...[
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    initialValue: category,
+                    items: [
+                      'خوراک',
+                      'رفت‌وآمد',
+                      'تفریح',
+                      'خرید',
+                      'قبض',
+                      'سایر',
+                    ].map((x) {
+                      return DropdownMenuItem(
+                        value: x,
+                        child: Text(x),
+                      );
+                    }).toList(),
+                    onChanged: (x) =>
+                        refresh(() => category = x ?? category),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: note,
+                  decoration: const InputDecoration(
+                    labelText: 'توضیح',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('انصراف'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final n =
+                    int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
+                if (n > 0) {
+                  m.addEntry(
+                    kind,
+                    n,
+                    category: category,
+                    note: note.text,
+                    selectedDate: selectedDate,
+                  );
+                  Navigator.pop(c);
+                }
+              },
+              child: const Text('ثبت'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  amount.dispose();
+  note.dispose();
+}
+
 Future<void> editEntryDialog(Entry e)async{
   if(e.kind!='expense'&&e.kind!='income')return;
   final amount=TextEditingController(text:'${e.amount}'),note=TextEditingController(text:e.note);
