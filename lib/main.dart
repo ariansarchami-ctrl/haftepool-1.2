@@ -1587,9 +1587,62 @@ card('پس‌انداز این هفته', Container(
       ),
     ],
   ),
-)),
 
-    card('پیش‌بینی تا پایان هفته',Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('خرج تخمینی: ${toman(m.projectedSpend)}'),Text('مانده تخمینی: ${toman(m.currentBudget+m.carryIn+m.income-m.projectedSpend-m.total(m.currentWeek,'transferOut'))}'),if(m.unusualExpense)const Text('هشدار: خرج امروز از الگوی گذشته بیشتر است',style:TextStyle(color:Colors.deepOrange))])),
+    card(
+      'پیش‌بینی تا پایان هفته',
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_graph_outlined,
+                  color: Color(0xFF087F75)),
+              SizedBox(width: 8),
+              Text('برآورد بر اساس روند خرج‌های فعلی'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'خرج تخمینی تا پایان هفته',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          Text(
+            toman(m.projectedSpend),
+            style: const TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'مانده تخمینی پایان هفته',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          Text(
+            toman(
+              m.currentBudget +
+                  m.carryIn +
+                  m.income -
+                  m.projectedSpend -
+                  m.total(m.currentWeek, 'transferOut'),
+            ),
+            style: const TextStyle(
+              fontSize: 23,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF087F75),
+            ),
+          ),
+          if (m.unusualExpense) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'هشدار: خرج امروز از الگوی گذشته بیشتر است',
+              style: TextStyle(color: Colors.deepOrange),
+            ),
+          ],
+        ],
+      ),
+    ),
+
     
     card(
       'مربی مالی',
