@@ -312,6 +312,36 @@ class _Prime32CalendarViewState
                   '${Prime32Jalali.digits(entry.amount)} تومان',
                 ),
               )),
+              
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: widget.onAddEntry == null ||
+                              selected.isAfter(DateTime.now())
+                          ? null
+                          : () => widget.onAddEntry!(
+                              selected, 'expense'),
+                      icon: const Icon(Icons.remove_circle_outline),
+                      label: const Text('ثبت هزینه'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: widget.onAddEntry == null ||
+                              selected.isAfter(DateTime.now())
+                          ? null
+                          : () => widget.onAddEntry!(
+                              selected, 'income'),
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('ثبت درآمد'),
+                    ),
+                  ),
+                ],
+              ),
+
 
             ],
           ),
