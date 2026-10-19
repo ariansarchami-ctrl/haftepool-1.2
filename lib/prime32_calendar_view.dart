@@ -285,6 +285,28 @@ class _Prime32CalendarViewState
                 'تعداد تراکنش: '
                 '${Prime32Jalali.digits(summary.transactionCount)}',
               ),
+              
+              const SizedBox(height: 12),
+              ...Prime32CalendarData.entriesOn(
+                selected,
+                widget.entries,
+              ).map((entry) => ListTile(
+                dense: true,
+                leading: Icon(
+                  entry.kind == 'expense'
+                      ? Icons.arrow_upward
+                      : Icons.arrow_downward,
+                  color: entry.kind == 'expense'
+                      ? Colors.redAccent
+                      : Colors.green,
+                ),
+                title: Text(entry.category),
+                subtitle: Text(entry.note),
+                trailing: Text(
+                  '${Prime32Jalali.digits(entry.amount)} تومان',
+                ),
+              )),
+
             ],
           ),
         ),
