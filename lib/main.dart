@@ -638,7 +638,37 @@ Future<void> editEntryDialog(Entry e)async{
     title:Text(e.kind=='expense'?'ویرایش خرج':'ویرایش درآمد'),
     content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       Text('تاریخ: ${e.date}'),
-      TextField(controller:amount,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'مبلغ به تومان')),
+      
+      TextField(
+        controller: amount,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            final digits = newValue.text.replaceAll(
+              RegExp(r'[^0-9]'), '',
+            );
+            if (digits.isEmpty) {
+              return const TextEditingValue();
+            }
+            final number = int.tryParse(digits);
+            if (number == null) return oldValue;
+            final formatted =
+                NumberFormat.decimalPattern('en_US').format(number);
+            return TextEditingValue(
+              text: formatted,
+              selection: TextSelection.collapsed(
+                offset: formatted.length,
+              ),
+            );
+          }),
+        ],
+        onChanged: (_) => refresh(() {}),
+        decoration: const InputDecoration(
+          labelText: 'مبلغ به تومان',
+          prefixIcon: Icon(Icons.edit_outlined),
+        ),
+      ),
+
       if(e.kind=='expense')DropdownButtonFormField<String>(initialValue:category,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>refresh(()=>category=x??category)),
       TextField(controller:note,decoration:const InputDecoration(labelText:'توضیح')),
     ])),
