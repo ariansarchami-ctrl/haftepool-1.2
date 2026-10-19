@@ -1606,7 +1606,11 @@ card('پس‌انداز این هفته', Container(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              overToday || overWeek
+              
+overToday || overWeek ||
+    (m.currentBudget > 0 &&
+        m.projectedSpend > m.currentBudget + m.income)
+
                   ? Icons.lightbulb_outline
                   : Icons.tips_and_updates_outlined,
               color: overToday || overWeek
