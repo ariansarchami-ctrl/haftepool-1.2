@@ -1596,8 +1596,12 @@ card('پس‌انداز این هفته', Container(
       Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
+ 
         decoration: BoxDecoration(
-          color: overToday || overWeek
+          color: overToday || overWeek ||
+                  (m.currentBudget > 0 &&
+                      m.projectedSpend >
+                          m.currentBudget + m.income)
               ? const Color(0xFFFFF3E8)
               : const Color(0xFFEAF6F2),
           borderRadius: BorderRadius.circular(14),
@@ -1606,26 +1610,21 @@ card('پس‌انداز این هفته', Container(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              
-
-overToday || overWeek ||
-    (m.currentBudget > 0 &&
-        m.projectedSpend > m.currentBudget + m.income)
-
-    (m.currentBudget > 0 &&
-        m.projectedSpend > m.currentBudget + m.income)
-
+              overToday || overWeek ||
+                      (m.currentBudget > 0 &&
+                          m.projectedSpend >
+                              m.currentBudget + m.income)
                   ? Icons.lightbulb_outline
                   : Icons.tips_and_updates_outlined,
-              color: 
-overToday || overWeek ||
-    (m.currentBudget > 0 &&
-        m.projectedSpend > m.currentBudget + m.income)
-
+              color: overToday || overWeek ||
+                      (m.currentBudget > 0 &&
+                          m.projectedSpend >
+                              m.currentBudget + m.income)
                   ? Colors.deepOrange
                   : const Color(0xFF087F75),
               size: 26,
             ),
+
             const SizedBox(width: 12),
             Expanded(
               child: Text(
