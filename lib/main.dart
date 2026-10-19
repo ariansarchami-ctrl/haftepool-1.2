@@ -240,7 +240,7 @@ class FinanceModel extends ChangeNotifier {
     if(i<0)throw StateError('تراکنش پیدا نشد');
     if(entries[i].kind!='expense'&&entries[i].kind!='income')throw StateError('حذف این نوع تراکنش هنوز فعال نیست');
     entries.removeAt(i);save();
-
+  }
   void addEntry(
     String kind,
     int amount, {
