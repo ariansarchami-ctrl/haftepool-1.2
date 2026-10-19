@@ -240,9 +240,34 @@ class FinanceModel extends ChangeNotifier {
     if(i<0)throw StateError('تراکنش پیدا نشد');
     if(entries[i].kind!='expense'&&entries[i].kind!='income')throw StateError('حذف این نوع تراکنش هنوز فعال نیست');
     entries.removeAt(i);save();
+
+  void addEntry(
+    String kind,
+    int amount, {
+    String category = 'سایر',
+    String note = '',
+    String account = 'budget',
+    String toAccount = '',
+    DateTime? selectedDate,
+  }) {
+    if (amount <= 0) return;
+    final entryDate = selectedDate ?? financialToday;
+    if (entryDate.isAfter(financialToday)) {
+      throw StateError('ثبت تراکنش برای روزهای آینده مجاز نیست');
+    }
+    entries.add(Entry(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      kind: kind,
+      amount: amount,
+      date: dateKey(entryDate),
+      category: category,
+      note: note,
+      account: account,
+      toAccount: toAccount,
+    ));
+    save();
   }
-  void addEntry(String kind,int amount,{String category='سایر',String note='',String account='budget',String toAccount=''}){if(amount<=0)return;entries.add(Entry(id:DateTime.now().microsecondsSinceEpoch.toString(),kind:kind,amount:amount,date:dateKey(financialToday),category:category,note:note,account:account,toAccount:toAccount));save();}
-  void transfer(int amount,String to){if(amount<=0||amount>available)throw StateError('موجودی بودجه کافی نیست');addEntry('transferOut',amount,toAccount:to);}
+
   void settle(String week,int saving){if(settlements.containsKey(week))throw StateError('این هفته قبلاً تسویه شده');final rem=max(0,(budgets[week]??0)+total(week,'income')-total(week,'expense')-total(week,'transferOut'));if(saving<0||saving>rem)throw StateError('مبلغ تقسیم نامعتبر است');settlements[week]={'saving':saving,'next':rem-saving};save();}
   void configureWeek(int budget,int target){
     if(budget<0||target<0||target>budget)throw StateError('بودجه یا هدف پس‌انداز نامعتبر است');
