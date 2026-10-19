@@ -23,6 +23,8 @@ import 'prime_challenges.dart';
 import 'prime_reporting_engine.dart';
 import 'prime_preferences.dart';
 import 'prime31_dashboard.dart';
+import 'prime32_calendar_data.dart';
+import 'prime32_calendar_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
