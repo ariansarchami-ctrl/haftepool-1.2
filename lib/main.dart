@@ -664,6 +664,36 @@ final sortedCategories = categoryExpenses.entries.toList()
       Wrap(spacing:8,children:[FilledButton(onPressed:()=>entryDialog('expense'),child:const Text('ثبت خرید +')),OutlinedButton(onPressed:()=>entryDialog('income'),child:const Text('درآمد +')),OutlinedButton(onPressed:setupDialog,child:const Text('بودجه هفته'))])
     ])),
     
+    card('پیشرفت بودجه', Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('خرج امروز: ${toman(todaySpent)} از ${toman(allowance)}'),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: allowance > 0
+              ? (todaySpent / allowance).clamp(0.0, 1.0)
+              : 0.0,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(12),
+          color: overToday ? Colors.redAccent : const Color(0xFF087F75),
+          backgroundColor: Colors.black12,
+        ),
+        const SizedBox(height: 18),
+        Text('خرج هفته: ${toman(m.expense)} از ${toman(spendable)}'),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: spendable > 0
+              ? (m.expense / spendable).clamp(0.0, 1.0)
+              : 0.0,
+          minHeight: 12,
+          borderRadius: BorderRadius.circular(12),
+          color: overWeek ? Colors.redAccent : const Color(0xFF087F75),
+          backgroundColor: Colors.black12,
+        ),
+      ],
+    )),
+
+    
 card(
   'مقایسه با هفته قبل',
   Column(
